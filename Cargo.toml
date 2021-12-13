@@ -1,6 +1,5 @@
 [workspace]
 members = [
-    "gears_core",
-    "gears_gui",
+    "gears_core"
 ]
 
