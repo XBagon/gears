@@ -1,0 +1,5 @@
+use_small_heuristics = "Off"
+combine_control_expr = false
+max_width = 100
+merge_imports = true
+reorder_impl_items = true
