@@ -1,4 +1,5 @@
 use io::*;
+use crate::gear::Error::NonEvaluable;
 use super::*;
 
 pub mod io;
@@ -18,4 +19,10 @@ impl Gears {
 pub enum GearSpecial {
     Input(Input),
     Output(Output),
+}
+
+impl Geared for GearSpecial {
+    fn evaluate(&self, _register: &GearRegister, _input: Vec<TypedValue>) -> Result<Vec<TypedValue>> {
+        Err(NonEvaluable)
+    }
 }

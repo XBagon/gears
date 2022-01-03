@@ -4,29 +4,41 @@ use crate::{
     gear::compound::GearCompound,
     gear::internal::GearInternal
 };
+use crate::gear::special::GearSpecial;
+use thiserror::Error;
 
-mod internal;
-mod compound;
-mod special;
+pub mod internal;
+pub mod compound;
+pub mod special;
 
 new_key_type! { pub struct GearId; }
+
+impl GearId {
+    pub fn instance(self) -> GearInstance {
+        GearInstance::new(self)
+    }
+}
 
 type GearSlotMap = SlotMap<GearId, Gear>;
 
 pub struct GearRegister {
     pub gears: GearSlotMap,
-    internal: internal::Gears,
-    special: special::Gears,
+    pub internal: internal::Gears,
+    pub special: special::Gears,
 }
 
 impl GearRegister {
     pub fn init() -> Self {
         let mut gears = SlotMap::with_key();
         Self {
-            gears,
             internal: internal::Gears::init(&mut gears),
             special: special::Gears::init(&mut gears),
+            gears,
         }
+    }
+
+    pub fn register(&mut self, gear: Gear) -> GearId {
+        self.gears.insert(gear)
     }
 }
 
@@ -50,11 +62,12 @@ impl Gear {
 }
 
 impl Geared for Gear {
-    fn evaluate(&self, input: Vec<TypedValue>) -> Vec<TypedValue> {
-        self.implementation.evaluate(input)
+    fn evaluate(&self, register: &GearRegister, input: Vec<TypedValue>) -> Result<Vec<TypedValue>> {
+        self.implementation.evaluate(register, input)
     }
 }
 
+#[derive(Debug)]
 pub struct GearInstance {
     pub name: Option<String>,
     pub input_names: Vec<Option<String>>,
@@ -75,7 +88,7 @@ impl GearInstance {
 
 impl From<GearId> for GearInstance {
     fn from(id: GearId) -> Self {
-        GearInstance::new(id)
+        id.instance()
     }
 }
 
@@ -97,9 +110,19 @@ pub enum GearImplementation {
     GearSpecial,
 }
 
+#[derive(Error, Debug)]
+pub enum Error {
+    #[error("Error occurred in evaluation")]
+    GearInternalError(#[from] Box<dyn std::error::Error>),
+    #[error("This `GearSpecial` isn't evaluable")]
+    NonEvaluable,
+}
+
+pub type Result<T> = std::result::Result<T, Error>;
+
 #[enum_dispatch(GearImplementation)]
 pub trait Geared {
-    fn evaluate(&self, input: Vec<TypedValue>) -> Vec<TypedValue>;
+    fn evaluate(&self, register: &GearRegister, input: Vec<TypedValue>) -> Result<Vec<TypedValue>>;
 }
 
 pub enum TypedValue {
@@ -108,10 +131,12 @@ pub enum TypedValue {
     String(String),
 }
 
+//TODO: use lazy_static to create constant `TypeDiscriminant`s for each type, until `std::mem::discriminant` is const on stable
+
 pub type TypeDiscriminant = std::mem::Discriminant<TypedValue>;
 
 impl TypedValue {
-    fn ty(&self) -> TypeDiscriminant {
+    pub fn ty(&self) -> TypeDiscriminant {
         std::mem::discriminant(self)
     }
 }
