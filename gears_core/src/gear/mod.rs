@@ -7,26 +7,32 @@ use crate::{
 
 mod internal;
 mod compound;
+mod special;
 
 new_key_type! { pub struct GearId; }
 
-pub struct GearRegister(pub SlotMap<GearId, Gear>);
+type GearSlotMap = SlotMap<GearId, Gear>;
+
+pub struct GearRegister {
+    pub gears: GearSlotMap,
+    internal: internal::Gears,
+    special: special::Gears,
+}
 
 impl GearRegister {
-    pub fn new() -> Self {
-        Self(SlotMap::with_key())
-    }
-
-    pub fn init(&mut self) {
-        internal::init(self);
+    pub fn init() -> Self {
+        let mut gears = SlotMap::with_key();
+        Self {
+            gears,
+            internal: internal::Gears::init(&mut gears),
+            special: special::Gears::init(&mut gears),
+        }
     }
 }
 
 impl Default for GearRegister {
     fn default() -> Self {
-        let mut s = Self::new();
-        s.init();
-        s
+        Self::init()
     }
 }
 
@@ -56,6 +62,23 @@ pub struct GearInstance {
     pub gear: GearId,
 }
 
+impl GearInstance {
+    pub fn new(gear: GearId) -> Self {
+        Self {
+            name: None,
+            input_names: vec![],
+            output_names: vec![],
+            gear
+        }
+    }
+}
+
+impl From<GearId> for GearInstance {
+    fn from(id: GearId) -> Self {
+        GearInstance::new(id)
+    }
+}
+
 pub struct IOInformation {
     name: String,
     ty: TypeDiscriminant,
@@ -71,6 +94,7 @@ impl IOInformation {
 pub enum GearImplementation {
     GearInternal,
     GearCompound,
+    GearSpecial,
 }
 
 #[enum_dispatch(GearImplementation)]

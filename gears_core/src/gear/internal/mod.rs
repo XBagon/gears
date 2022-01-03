@@ -2,8 +2,16 @@ use super::*;
 
 mod math;
 
-pub fn init(register: &mut GearRegister) {
-    math::init(register);
+pub struct Gears {
+    pub math_gears: math::Gears,
+}
+
+impl Gears {
+    pub fn init(gears: &mut GearSlotMap) -> Self {
+        Self {
+            math_gears: math::Gears::init(gears),
+        }
+    }
 }
 
 pub struct GearInternal {

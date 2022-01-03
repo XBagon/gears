@@ -1,6 +1,24 @@
 use crate::gear::*;
 use super::*;
 
+pub struct Gears {
+    pub add: GearId,
+    pub sub: GearId,
+    pub mul: GearId,
+    pub div: GearId,
+}
+
+impl Gears {
+    pub fn init(gears: &mut GearSlotMap) -> Self {
+        Self {
+            add: gears.insert(Add::template()),
+            sub: gears.insert(Sub::template()),
+            mul: gears.insert(Mul::template()),
+            div: gears.insert(Div::template()),
+        }
+    }
+}
+
 template!(Add (summand1: U64, summand2: U64) -> (sum: U64) {{
     sum = summand1 + summand2
 }});
@@ -17,9 +35,3 @@ template!(Div (dividend: U64, divisor: U64) -> (fraction: U64) {{
     fraction = dividend / divisor
 }});
 
-pub fn init(register: &mut GearRegister) {
-    register.0.insert(Add::template());
-    register.0.insert(Sub::template());
-    register.0.insert(Mul::template());
-    register.0.insert(Div::template());
-}

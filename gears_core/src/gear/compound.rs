@@ -1,4 +1,4 @@
-use slotmap::{SlotMap, new_key_type, Key};
+use slotmap::{SlotMap, new_key_type};
 use std::collections::HashMap;
 use super::*;
 
@@ -7,17 +7,16 @@ new_key_type! { pub struct GearInstanceId; }
 pub struct GearCompound {
     gears: SlotMap<GearInstanceId, GearInstance>,
     connections: HashMap<(GearInstanceId, usize),(GearInstanceId, usize)>,
-    in_connections: Vec<(GearInstanceId, usize)>,
-    out_connections: Vec<(GearInstanceId, usize)>,
 }
 
 impl GearCompound {
-    fn new(num_inputs: usize, num_outputs: usize) -> Self {
+    fn new(register: &mut GearRegister, num_inputs: usize, num_outputs: usize) -> Self {
+        let mut gears = SlotMap::with_key();
+        gears.insert(register.special.io.input.into());
+        gears.insert(register.special.io.output.into());
         Self {
-            gears: SlotMap::with_key(),
+            gears,
             connections: HashMap::new(),
-            in_connections: vec![(GearInstanceId::null(), usize::MAX); num_inputs],
-            out_connections: vec![(GearInstanceId::null(), usize::MAX); num_outputs],
         }
     }
 
