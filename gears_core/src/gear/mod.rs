@@ -125,6 +125,7 @@ pub trait Geared {
     fn evaluate(&self, register: &GearRegister, input: Vec<TypedValue>) -> Result<Vec<TypedValue>>;
 }
 
+#[derive(Clone, Debug, PartialEq)]
 pub enum TypedValue {
     U64(u64),
     F64(f64),

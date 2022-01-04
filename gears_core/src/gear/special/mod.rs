@@ -22,7 +22,10 @@ pub enum GearSpecial {
 }
 
 impl Geared for GearSpecial {
-    fn evaluate(&self, _register: &GearRegister, _input: Vec<TypedValue>) -> Result<Vec<TypedValue>> {
-        Err(NonEvaluable)
+    fn evaluate(&self, _register: &GearRegister, input: Vec<TypedValue>) -> Result<Vec<TypedValue>> {
+        match self {
+            GearSpecial::Output(_) => Ok(input),
+            _ => Err(NonEvaluable),
+        }
     }
 }
