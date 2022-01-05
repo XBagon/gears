@@ -2,7 +2,11 @@ use slotmap::{SlotMap, new_key_type};
 use enum_dispatch::enum_dispatch;
 use crate::{
     gear::compound::GearCompound,
-    gear::internal::GearInternal
+    gear::internal::GearInternal,
+    gear::command::{
+        GearGenericCommand,
+        GearCommand,
+    },
 };
 use crate::gear::special::GearSpecial;
 use thiserror::Error;
@@ -10,6 +14,7 @@ use thiserror::Error;
 pub mod internal;
 pub mod compound;
 pub mod special;
+pub mod command;
 
 new_key_type! { pub struct GearId; }
 
@@ -25,6 +30,7 @@ pub struct GearRegister {
     pub gears: GearSlotMap,
     pub internal: internal::Gears,
     pub special: special::Gears,
+    pub command: command::Gears,
 }
 
 impl GearRegister {
@@ -69,9 +75,13 @@ impl Geared for Gear {
 
 #[derive(Debug)]
 pub struct GearInstance {
+    /// Overwrites [gear][`Self::gear`]'s name
     pub name: Option<String>,
+    /// Overwrites [gear][`Self::gear`]'s input names
     pub input_names: Vec<Option<String>>,
+    /// Overwrites [gear][`Self::gear`]'s output names
     pub output_names: Vec<Option<String>>,
+    /// Id of the template [`Gear`]
     pub gear: GearId,
 }
 
@@ -108,14 +118,22 @@ pub enum GearImplementation {
     GearInternal,
     GearCompound,
     GearSpecial,
+    GearCommand,
+    GearGenericCommand,
 }
 
 #[derive(Error, Debug)]
 pub enum Error {
     #[error("Error occurred in evaluation")]
     GearInternalError(#[from] Box<dyn std::error::Error>),
+    #[error("IOError occured")]
+    IOError(#[from] std::io::Error),
+    #[error("IOError occured")]
+    FromUTF8Error(#[from] std::string::FromUtf8Error),
     #[error("This `GearSpecial` isn't evaluable")]
     NonEvaluable,
+    #[error("Terminated by signal: {0}")]
+    TerminatedBySignal(i32),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -127,7 +145,10 @@ pub trait Geared {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum TypedValue {
+    U32(u32),
     U64(u64),
+    I32(i32),
+    I64(i64),
     F64(f64),
     String(String),
 }

@@ -22,7 +22,7 @@ impl Input {
             String::from("Input"),
             Vec::new(),
             Vec::new(),
-            GearImplementation::GearSpecial(GearSpecial::Input(Input{})),
+            GearImplementation::GearSpecial(GearSpecial::Input),
         )
     }
 }
@@ -34,7 +34,7 @@ impl Output {
             String::from("Output"),
             Vec::new(),
             Vec::new(),
-            GearImplementation::GearSpecial(GearSpecial::Output(Output{})),
+            GearImplementation::GearSpecial(GearSpecial::Output),
         )
     }
 }

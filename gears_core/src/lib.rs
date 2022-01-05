@@ -5,7 +5,9 @@ pub mod gear;
 
 #[cfg(test)]
 mod tests {
+    use std::process::Command;
     use crate::gear::*;
+    use crate::gear::command::GearCommand;
     use crate::gear::compound::GearCompound;
 
     /*
@@ -80,4 +82,49 @@ mod tests {
             TypedValue::U64(52)
         );
     }
+
+    #[test]
+    fn test_echo() {
+        let register = GearRegister::init();
+        let command = GearCommand::new(String::from("echo"));
+
+        let gear = Gear::new(
+            String::from("Echo"),
+            vec![IOInformation::new(String::from("text"), TypedValue::String(Default::default()).ty())],
+            vec![
+                IOInformation::new(String::from("exit code"), TypedValue::String(Default::default()).ty()),
+                IOInformation::new(String::from("stdout"), TypedValue::String(Default::default()).ty()),
+                IOInformation::new(String::from("stderr"), TypedValue::String(Default::default()).ty())
+            ],
+            command.into(),
+        );
+
+        assert_eq!(
+            gear.evaluate(&register, vec![TypedValue::String(String::from("Hello world!"))]).unwrap()[1],
+            TypedValue::String(String::from("Hello world!\n"))
+        );
+    }
+
+    #[test]
+    fn test_cargo() {
+        let register = GearRegister::init();
+        let command = register.command.generic_command.instance();
+
+        let gear = Gear::new(
+            String::from("Cargo"),
+            vec![],
+            vec![
+                IOInformation::new(String::from("exit code"), TypedValue::String(Default::default()).ty()),
+                IOInformation::new(String::from("stdout"), TypedValue::String(Default::default()).ty()),
+                IOInformation::new(String::from("stderr"), TypedValue::String(Default::default()).ty())
+            ],
+            command.into(),
+        );
+
+        assert_eq!(
+            gear.evaluate(&register, vec![TypedValue::String(String::from("Hello world!"))]).unwrap()[1],
+            TypedValue::String(String::from("Hello world!\n"))
+        );
+    }
+
 }

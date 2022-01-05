@@ -50,7 +50,7 @@ impl GearCompound {
 
 impl Geared for GearCompound {
     fn evaluate(&self, register: &GearRegister, input: Vec<TypedValue>) -> Result<Vec<TypedValue>> {
-        //DFS with cache for evaluations
+        //Post-Order DFS with cache for evaluations
         let mut stack = Vec::new();
         let mut cache: SecondaryMap<GearInstanceId, Vec<TypedValue>> = SecondaryMap::with_capacity(self.gears.len());
         let mut visited: SecondaryMap<GearInstanceId, ()> = SecondaryMap::with_capacity(self.gears.len());
@@ -82,7 +82,7 @@ impl Geared for GearCompound {
 
                     dbg!(self.input_id);
                     dbg!(current_gear_id);
-                    cache.insert(current_gear_id, gear.evaluate(&register, inputs)?); //early return/abort
+                    cache.insert(current_gear_id, gear.evaluate(register, inputs)?); //early return/abort
                 }
             }
         }
