@@ -1,5 +1,5 @@
-use crate::gear::Error::NonEvaluable;
 use super::*;
+use crate::gear::Error::NonEvaluable;
 
 pub mod io;
 
@@ -21,7 +21,11 @@ pub enum GearSpecial {
 }
 
 impl Geared for GearSpecial {
-    fn evaluate(&self, _register: &GearRegister, input: Vec<TypedValue>) -> Result<Vec<TypedValue>> {
+    fn evaluate(
+        &self,
+        _register: &GearRegister,
+        input: Vec<TypedValue>,
+    ) -> Result<Vec<TypedValue>> {
         match self {
             GearSpecial::Output => Ok(input),
             _ => Err(NonEvaluable),

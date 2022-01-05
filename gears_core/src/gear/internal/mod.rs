@@ -15,23 +15,29 @@ impl Gears {
 }
 
 pub struct GearInternal {
-    pub function: fn(Vec<TypedValue>) -> std::result::Result<Vec<TypedValue>, Box<dyn std::error::Error>>,
+    pub function:
+        fn(Vec<TypedValue>) -> std::result::Result<Vec<TypedValue>, Box<dyn std::error::Error>>,
 }
 
 impl GearInternal {
-    pub fn new(function: fn(Vec<TypedValue>) -> std::result::Result<Vec<TypedValue>, Box<dyn std::error::Error>>) -> Self {
-        Self {
-            function,
-        }
+    pub fn new(
+        function: fn(
+            Vec<TypedValue>,
+        ) -> std::result::Result<Vec<TypedValue>, Box<dyn std::error::Error>>,
+    ) -> Self {
+        Self { function }
     }
 }
 
 impl Geared for GearInternal {
-    fn evaluate(&self, _register: &GearRegister, input: Vec<TypedValue>) -> Result<Vec<TypedValue>> {
+    fn evaluate(
+        &self,
+        _register: &GearRegister,
+        input: Vec<TypedValue>,
+    ) -> Result<Vec<TypedValue>> {
         Ok((self.function)(input)?)
     }
 }
-
 
 macro_rules! template {
     ($name:ident ($($inname:ident: $inty:ident),*) -> ($($outname:ident: $outty:ident),*) {$code:block}) => {

@@ -1,20 +1,17 @@
-use slotmap::{SlotMap, new_key_type};
-use enum_dispatch::enum_dispatch;
+use crate::gear::special::GearSpecial;
 use crate::{
+    gear::command::{GearCommand, GearGenericCommand},
     gear::compound::GearCompound,
     gear::internal::GearInternal,
-    gear::command::{
-        GearGenericCommand,
-        GearCommand,
-    },
 };
-use crate::gear::special::GearSpecial;
+use enum_dispatch::enum_dispatch;
+use slotmap::{new_key_type, SlotMap};
 use thiserror::Error;
 
-pub mod internal;
-pub mod compound;
-pub mod special;
 pub mod command;
+pub mod compound;
+pub mod internal;
+pub mod special;
 
 new_key_type! { pub struct GearId; }
 
@@ -63,8 +60,18 @@ pub struct Gear {
 }
 
 impl Gear {
-    pub fn new(name: String, inputs: Vec<IOInformation>, outputs: Vec<IOInformation>, implementation: GearImplementation) -> Self {
-        Gear { name, inputs, outputs, implementation }
+    pub fn new(
+        name: String,
+        inputs: Vec<IOInformation>,
+        outputs: Vec<IOInformation>,
+        implementation: GearImplementation,
+    ) -> Self {
+        Gear {
+            name,
+            inputs,
+            outputs,
+            implementation,
+        }
     }
 }
 
@@ -92,7 +99,7 @@ impl GearInstance {
             name: None,
             input_names: vec![],
             output_names: vec![],
-            gear
+            gear,
         }
     }
 }

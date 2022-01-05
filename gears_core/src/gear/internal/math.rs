@@ -1,4 +1,3 @@
-use crate::gear::*;
 use super::*;
 
 pub struct Gears {
@@ -34,4 +33,3 @@ template!(Mul (factor1: U64, factor2: U64) -> (product: U64) {{
 template!(Div (dividend: U64, divisor: U64) -> (fraction: U64) {{
     fraction = dividend / divisor
 }});
-

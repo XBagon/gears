@@ -1,4 +1,3 @@
-use crate::gear::*;
 use super::*;
 
 pub struct Gears {

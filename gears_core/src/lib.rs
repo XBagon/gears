@@ -5,9 +5,9 @@ pub mod gear;
 
 #[cfg(test)]
 mod tests {
-    use crate::gear::*;
     use crate::gear::command::GearCommand;
     use crate::gear::compound::GearCompound;
+    use crate::gear::*;
 
     /*
     #[test]
@@ -35,9 +35,15 @@ mod tests {
 
         Gear::new(
             String::from("Squared"),
-            vec![IOInformation::new(String::from("base"), TypedValue::U64(Default::default()).ty())],
-            vec![IOInformation::new(String::from("square"), TypedValue::U64(Default::default()).ty())],
-            compound.into()
+            vec![IOInformation::new(
+                String::from("base"),
+                TypedValue::U64(Default::default()).ty(),
+            )],
+            vec![IOInformation::new(
+                String::from("square"),
+                TypedValue::U64(Default::default()).ty(),
+            )],
+            compound.into(),
         )
     }
 
@@ -72,12 +78,19 @@ mod tests {
 
         let gear = Gear::new(
             String::from("x² + y²"),
-            vec![IOInformation::new(String::from("x"), TypedValue::U64(Default::default()).ty()), IOInformation::new(String::from("y"), TypedValue::U64(Default::default()).ty())],
-            vec![IOInformation::new(String::from("z²"), TypedValue::U64(Default::default()).ty())],
-            compound.into()
+            vec![
+                IOInformation::new(String::from("x"), TypedValue::U64(Default::default()).ty()),
+                IOInformation::new(String::from("y"), TypedValue::U64(Default::default()).ty()),
+            ],
+            vec![IOInformation::new(
+                String::from("z²"),
+                TypedValue::U64(Default::default()).ty(),
+            )],
+            compound.into(),
         );
         assert_eq!(
-            gear.evaluate(&register, vec![TypedValue::U64(4), TypedValue::U64(6)]).unwrap()[0],
+            gear.evaluate(&register, vec![TypedValue::U64(4), TypedValue::U64(6)])
+                .unwrap()[0],
             TypedValue::U64(52)
         );
     }
@@ -89,17 +102,33 @@ mod tests {
 
         let gear = Gear::new(
             String::from("Echo"),
-            vec![IOInformation::new(String::from("text"), TypedValue::String(Default::default()).ty())],
+            vec![IOInformation::new(
+                String::from("text"),
+                TypedValue::String(Default::default()).ty(),
+            )],
             vec![
-                IOInformation::new(String::from("exit code"), TypedValue::String(Default::default()).ty()),
-                IOInformation::new(String::from("stdout"), TypedValue::String(Default::default()).ty()),
-                IOInformation::new(String::from("stderr"), TypedValue::String(Default::default()).ty())
+                IOInformation::new(
+                    String::from("exit code"),
+                    TypedValue::String(Default::default()).ty(),
+                ),
+                IOInformation::new(
+                    String::from("stdout"),
+                    TypedValue::String(Default::default()).ty(),
+                ),
+                IOInformation::new(
+                    String::from("stderr"),
+                    TypedValue::String(Default::default()).ty(),
+                ),
             ],
             command.into(),
         );
 
         assert_eq!(
-            gear.evaluate(&register, vec![TypedValue::String(String::from("Hello world!"))]).unwrap()[1],
+            gear.evaluate(
+                &register,
+                vec![TypedValue::String(String::from("Hello world!"))]
+            )
+            .unwrap()[1],
             TypedValue::String(String::from("Hello world!\n"))
         );
     }
@@ -110,9 +139,9 @@ mod tests {
         let gear = register.command.generic_command.instance();
 
         assert_eq!(
-            gear.evaluate(&register, vec![TypedValue::String(String::from("cargo"))]).unwrap()[0],
+            gear.evaluate(&register, vec![TypedValue::String(String::from("cargo"))])
+                .unwrap()[0],
             TypedValue::I32(0)
         );
     }
-
 }
