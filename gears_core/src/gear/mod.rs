@@ -1,8 +1,9 @@
 use crate::gear::special::GearSpecial;
-use crate::{
-    gear::command::{GearCommand, GearGenericCommand},
-    gear::compound::GearCompound,
-    gear::internal::GearInternal,
+use crate::gear::{
+    command::{GearCommand, GearGenericCommand},
+    compound::GearCompound,
+    internal::GearInternal,
+    special::{io::Input, io::Output, literal::Literal},
 };
 use enum_dispatch::enum_dispatch;
 use slotmap::{new_key_type, SlotMap};
@@ -152,19 +153,26 @@ pub enum Error {
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-#[enum_dispatch(GearImplementation)]
+#[enum_dispatch(GearImplementation, GearSpecial)]
 pub trait Geared {
     fn evaluate(&self, register: &GearRegister, input: Vec<TypedValue>) -> Result<Vec<TypedValue>>;
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum TypedValue {
+    None,
     U32(u32),
     U64(u64),
     I32(i32),
     I64(i64),
     F64(f64),
     String(String),
+}
+
+impl Default for TypedValue {
+    fn default() -> Self {
+        TypedValue::None
+    }
 }
 
 //TODO: use lazy_static to create constant `TypeDiscriminant`s for each type, until `std::mem::discriminant` is const on stable

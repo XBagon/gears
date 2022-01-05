@@ -1,4 +1,5 @@
 use super::*;
+use crate::gear::Error::NonEvaluable;
 
 pub struct Gears {
     pub input: GearId,
@@ -21,8 +22,18 @@ impl Input {
             String::from("Input"),
             Vec::new(),
             Vec::new(),
-            GearImplementation::GearSpecial(GearSpecial::Input),
+            GearImplementation::GearSpecial(GearSpecial::Input(Input)),
         )
+    }
+}
+
+impl Geared for Input {
+    fn evaluate(
+        &self,
+        _register: &GearRegister,
+        _input: Vec<TypedValue>,
+    ) -> Result<Vec<TypedValue>> {
+        Err(NonEvaluable)
     }
 }
 
@@ -33,7 +44,17 @@ impl Output {
             String::from("Output"),
             Vec::new(),
             Vec::new(),
-            GearImplementation::GearSpecial(GearSpecial::Output),
+            GearImplementation::GearSpecial(GearSpecial::Output(Output)),
         )
+    }
+}
+
+impl Geared for Output {
+    fn evaluate(
+        &self,
+        _register: &GearRegister,
+        input: Vec<TypedValue>,
+    ) -> Result<Vec<TypedValue>> {
+        Ok(input)
     }
 }
