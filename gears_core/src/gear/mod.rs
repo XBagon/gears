@@ -39,6 +39,7 @@ impl GearRegister {
         Self {
             internal: internal::Gears::init(&mut gears),
             special: special::Gears::init(&mut gears),
+            command: command::Gears::init(&mut gears),
             gears,
         }
     }
@@ -93,6 +94,12 @@ impl GearInstance {
             output_names: vec![],
             gear
         }
+    }
+}
+
+impl Geared for GearInstance {
+    fn evaluate(&self, register: &GearRegister, input: Vec<TypedValue>) -> Result<Vec<TypedValue>> {
+        register.gears[self.gear].evaluate(register, input)
     }
 }
 

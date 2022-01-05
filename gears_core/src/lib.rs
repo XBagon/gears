@@ -108,22 +108,11 @@ mod tests {
     #[test]
     fn test_cargo() {
         let register = GearRegister::init();
-        let command = register.command.generic_command.instance();
-
-        let gear = Gear::new(
-            String::from("Cargo"),
-            vec![],
-            vec![
-                IOInformation::new(String::from("exit code"), TypedValue::String(Default::default()).ty()),
-                IOInformation::new(String::from("stdout"), TypedValue::String(Default::default()).ty()),
-                IOInformation::new(String::from("stderr"), TypedValue::String(Default::default()).ty())
-            ],
-            command.into(),
-        );
+        let gear = register.command.generic_command.instance();
 
         assert_eq!(
-            gear.evaluate(&register, vec![TypedValue::String(String::from("Hello world!"))]).unwrap()[1],
-            TypedValue::String(String::from("Hello world!\n"))
+            gear.evaluate(&register, vec![TypedValue::String(String::from("cargo"))]).unwrap()[0],
+            TypedValue::I32(0)
         );
     }
 
