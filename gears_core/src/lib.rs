@@ -5,7 +5,6 @@ pub mod gear;
 
 #[cfg(test)]
 mod tests {
-    use std::process::Command;
     use crate::gear::*;
     use crate::gear::command::GearCommand;
     use crate::gear::compound::GearCompound;
