@@ -9,9 +9,6 @@ mod tests {
     use crate::gear::compound::GearCompound;
     use crate::gear::*;
 
-    #[test]
-    fn it_compiles() {}
-
     fn squared_gear(register: &GearRegister) -> Gear {
         let mut compound = GearCompound::new(&register, 1, 1);
         let mul = compound.add_gear(register.internal.math_gears.mul.instance());
