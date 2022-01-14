@@ -16,12 +16,12 @@ impl Gears {
 pub struct GearGenericCommand;
 impl GearGenericCommand {
     pub fn template() -> Gear {
-        Gear::new(
-            String::from("GenericCommand"),
-            Vec::new(),
-            Vec::new(),
-            GearImplementation::GearGenericCommand(GearGenericCommand),
-        )
+        Gear {
+            name: String::from("GenericCommand"),
+            inputs: Vec::new(),
+            outputs: Vec::new(),
+            implementation: GearImplementation::GearGenericCommand(GearGenericCommand),
+        }
     }
 }
 

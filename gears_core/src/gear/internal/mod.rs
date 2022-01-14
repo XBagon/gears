@@ -62,12 +62,12 @@ macro_rules! template {
             }
 
             fn template() -> Gear {
-                Gear::new(
-                    String::from(stringify!($name)),
-                    vec![$(IOInformation::new(String::from(stringify!($inname)), TypedValue::$inty(Default::default()).ty())),*],
-                    vec![$(IOInformation::new(String::from(stringify!($outname)), TypedValue::$outty(Default::default()).ty())),*],
-                    GearImplementation::GearInternal(GearInternal::new(Self::function))
-                )
+                Gear {
+                    name: String::from(stringify!($name)),
+                    inputs: vec![$(IOInformation::new(String::from(stringify!($inname)), TypedValue::$inty(Default::default()).ty())),*],
+                    outputs: vec![$(IOInformation::new(String::from(stringify!($outname)), TypedValue::$outty(Default::default()).ty())),*],
+                    implementation: GearImplementation::GearInternal(GearInternal::new(Self::function)),
+                }
             }
         }
     }

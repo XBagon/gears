@@ -1,49 +1,42 @@
 use super::*;
-use slotmap::{new_key_type, Key, SecondaryMap, SlotMap};
+use slotmap::{Key, SecondaryMap};
 use std::collections::HashMap;
 
-new_key_type! { pub struct GearInstanceId; }
-
 pub struct GearCompound {
-    gears: SlotMap<GearInstanceId, GearInstance>,
-    connections: HashMap<GearInstanceId, Vec<(GearInstanceId, usize)>>,
-    pub input_id: GearInstanceId,
-    pub output_id: GearInstanceId,
+    connections: HashMap<GearId, Vec<(GearId, usize)>>,
+    pub input_id: GearId,
+    pub output_id: GearId,
 }
 
 impl GearCompound {
-    pub fn new(register: &GearRegister, num_inputs: usize, num_outputs: usize) -> Self {
-        let mut gears = SlotMap::with_key();
+    pub fn new(register: &mut GearRegister, num_inputs: usize, num_outputs: usize) -> Self {
+        let mut input = register.instantiator(register.special.io.input);
+        input.gear.outputs =
+            vec![IOInformation::new(String::from("in"), TypedValue::None.ty()); num_inputs];
+        let input_id = input.instantiate();
 
-        let mut input = register.special.io.input.instance();
-        input.output_names = vec![Some(String::from("in")); num_inputs];
-        let input_id = gears.insert(input);
+        let mut output = register.instantiator(register.special.io.output);
+        output.gear.inputs =
+            vec![IOInformation::new(String::from("out"), TypedValue::None.ty()); num_outputs];
+        let output_id = output.instantiate();
 
-        let mut output = register.special.io.output.instance();
-        output.input_names = vec![Some(String::from("out")); num_outputs];
-        let output_id = gears.insert(output);
         Self {
-            gears,
             connections: HashMap::new(),
             input_id,
             output_id,
         }
     }
 
-    pub fn add_gear(&mut self, gear_instance: GearInstance) -> GearInstanceId {
-        self.gears.insert(gear_instance)
-    }
-
     pub fn connect(
         &mut self,
-        out_gear_id: GearInstanceId,
+        out_gear_id: GearId,
         out_index: usize,
-        in_gear_id: GearInstanceId,
+        in_gear_id: GearId,
         in_index: usize,
     ) {
         let vec = self.connections.entry(in_gear_id).or_default();
         if vec.len() <= in_index {
-            vec.resize(in_index + 1, (GearInstanceId::null(), 0)); //TODO: set up right size when adding gear
+            vec.resize(in_index + 1, (GearId::null(), 0)); //TODO: set up right size when adding gear
         }
         vec[in_index] = (out_gear_id, out_index);
     }
@@ -51,10 +44,9 @@ impl GearCompound {
     pub fn evaluate_instance(
         &self,
         register: &GearRegister,
-        instance_id: GearInstanceId,
+        gear_id: GearId,
         input: Vec<TypedValue>,
     ) -> Result<Vec<TypedValue>> {
-        let gear_id = self.gears.get(instance_id).unwrap().gear;
         register
             .gears
             .get(gear_id)
@@ -67,10 +59,8 @@ impl Geared for GearCompound {
     fn evaluate(&self, register: &GearRegister, input: Vec<TypedValue>) -> Result<Vec<TypedValue>> {
         //Post-Order DFS with cache for evaluations
         let mut stack = Vec::new();
-        let mut cache: SecondaryMap<GearInstanceId, Vec<TypedValue>> =
-            SecondaryMap::with_capacity(self.gears.len());
-        let mut visited: SecondaryMap<GearInstanceId, ()> =
-            SecondaryMap::with_capacity(self.gears.len());
+        let mut cache: SecondaryMap<GearId, Vec<TypedValue>> = SecondaryMap::new(); //capacity known to serdeble wrapper around GearCompound
+        let mut visited: SecondaryMap<GearId, ()> = SecondaryMap::new(); //capacity known to serdeble wrapper around GearCompound
 
         stack.push(self.output_id);
         cache.insert(self.input_id, input);
@@ -90,9 +80,7 @@ impl Geared for GearCompound {
             } else {
                 stack.pop();
                 if !cache.contains_key(current_gear_id) {
-                    let gear_instance = &self.gears[current_gear_id];
-                    let gear_id = gear_instance.gear;
-                    let gear = &register.gears[gear_id];
+                    let gear = &register.gears[current_gear_id];
 
                     let connections = &self.connections[&current_gear_id];
                     let inputs = connections

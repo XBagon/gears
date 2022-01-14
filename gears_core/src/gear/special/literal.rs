@@ -15,12 +15,14 @@ impl Gears {
 pub struct Literal(TypedValue);
 impl Literal {
     pub fn template() -> Gear {
-        Gear::new(
-            String::from("Literal"),
-            Vec::new(),
-            Vec::new(),
-            GearImplementation::GearSpecial(GearSpecial::Literal(Literal(TypedValue::None))),
-        )
+        Gear {
+            name: String::from("Literal"),
+            inputs: Vec::new(),
+            outputs: Vec::new(),
+            implementation: GearImplementation::GearSpecial(GearSpecial::Literal(Literal(
+                TypedValue::None,
+            ))),
+        }
     }
 }
 

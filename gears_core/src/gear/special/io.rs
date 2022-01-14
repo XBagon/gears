@@ -18,12 +18,12 @@ impl Gears {
 pub struct Input;
 impl Input {
     pub fn template() -> Gear {
-        Gear::new(
-            String::from("Input"),
-            Vec::new(),
-            Vec::new(),
-            GearImplementation::GearSpecial(GearSpecial::Input(Input)),
-        )
+        Gear {
+            name: String::from("Input"),
+            inputs: Vec::new(),
+            outputs: Vec::new(),
+            implementation: GearImplementation::GearSpecial(GearSpecial::Input(Input)),
+        }
     }
 }
 
@@ -40,12 +40,12 @@ impl Geared for Input {
 pub struct Output;
 impl Output {
     pub fn template() -> Gear {
-        Gear::new(
-            String::from("Output"),
-            Vec::new(),
-            Vec::new(),
-            GearImplementation::GearSpecial(GearSpecial::Output(Output)),
-        )
+        Gear {
+            name: String::from("Output"),
+            inputs: Vec::new(),
+            outputs: Vec::new(),
+            implementation: GearImplementation::GearSpecial(GearSpecial::Output(Output)),
+        }
     }
 }
 

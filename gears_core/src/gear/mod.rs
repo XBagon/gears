@@ -5,6 +5,7 @@ use crate::gear::{
     internal::GearInternal,
     special::{io::Input, io::Output, literal::Literal},
 };
+use crate::ty::*;
 use enum_dispatch::enum_dispatch;
 use slotmap::{new_key_type, SlotMap};
 use thiserror::Error;
@@ -16,9 +17,9 @@ pub mod special;
 
 new_key_type! { pub struct GearId; }
 
-impl GearId {
-    pub fn instance(self) -> GearInstance {
-        GearInstance::new(self)
+impl Geared for GearId {
+    fn evaluate(&self, register: &GearRegister, input: Vec<TypedValue>) -> Result<Vec<TypedValue>> {
+        register.evaluate(*self, input)
     }
 }
 
@@ -45,6 +46,69 @@ impl GearRegister {
     pub fn register(&mut self, gear: Gear) -> GearId {
         self.gears.insert(gear)
     }
+
+    pub fn instantiate(&mut self, template_gear_id: GearId) -> GearId {
+        self.register(self.templated_gear(template_gear_id))
+    }
+
+    pub fn instantiator(&mut self, template_gear_id: GearId) -> GearBuilder {
+        GearBuilder {
+            gear: self.templated_gear(template_gear_id),
+            register: self,
+        }
+    }
+
+    pub fn builder(&mut self, implementation: GearImplementation) -> GearBuilder {
+        let gear = Gear {
+            name: String::new(),
+            inputs: vec![],
+            outputs: vec![],
+            implementation,
+        };
+        GearBuilder {
+            gear,
+            register: self,
+        }
+    }
+
+    fn templated_gear(&self, template_gear_id: GearId) -> Gear {
+        let template = &self.gears[template_gear_id];
+        Gear {
+            name: template.name.clone(),
+            inputs: template.inputs.clone(),
+            outputs: template.outputs.clone(),
+            implementation: GearImplementation::Template(template_gear_id),
+        }
+    }
+
+    pub fn evaluate(&self, gear_id: GearId, input: Vec<TypedValue>) -> Result<Vec<TypedValue>> {
+        self.gears[gear_id].evaluate(self, input)
+    }
+}
+
+pub struct GearBuilder<'a> {
+    register: &'a mut GearRegister,
+    pub gear: Gear,
+}
+impl<'a> GearBuilder<'a> {
+    pub fn instantiate(self) -> GearId {
+        self.register.register(self.gear)
+    }
+
+    pub fn name(mut self, name: String) -> Self {
+        self.gear.name = name;
+        self
+    }
+
+    pub fn input(mut self, io_info: IOInformation) -> Self {
+        self.gear.inputs.push(io_info);
+        self
+    }
+
+    pub fn output(mut self, io_info: IOInformation) -> Self {
+        self.gear.outputs.push(io_info);
+        self
+    }
 }
 
 impl Default for GearRegister {
@@ -60,63 +124,13 @@ pub struct Gear {
     pub implementation: GearImplementation,
 }
 
-impl Gear {
-    pub fn new(
-        name: String,
-        inputs: Vec<IOInformation>,
-        outputs: Vec<IOInformation>,
-        implementation: GearImplementation,
-    ) -> Self {
-        Gear {
-            name,
-            inputs,
-            outputs,
-            implementation,
-        }
-    }
-}
-
 impl Geared for Gear {
     fn evaluate(&self, register: &GearRegister, input: Vec<TypedValue>) -> Result<Vec<TypedValue>> {
         self.implementation.evaluate(register, input)
     }
 }
 
-#[derive(Debug)]
-pub struct GearInstance {
-    /// Overwrites [gear][`Self::gear`]'s name
-    pub name: Option<String>,
-    /// Overwrites [gear][`Self::gear`]'s input names
-    pub input_names: Vec<Option<String>>,
-    /// Overwrites [gear][`Self::gear`]'s output names
-    pub output_names: Vec<Option<String>>,
-    /// Id of the template [`Gear`]
-    pub gear: GearId,
-}
-
-impl GearInstance {
-    pub fn new(gear: GearId) -> Self {
-        Self {
-            name: None,
-            input_names: vec![],
-            output_names: vec![],
-            gear,
-        }
-    }
-}
-
-impl Geared for GearInstance {
-    fn evaluate(&self, register: &GearRegister, input: Vec<TypedValue>) -> Result<Vec<TypedValue>> {
-        register.gears[self.gear].evaluate(register, input)
-    }
-}
-
-impl From<GearId> for GearInstance {
-    fn from(id: GearId) -> Self {
-        id.instance()
-    }
-}
-
+#[derive(Clone)]
 pub struct IOInformation {
     name: String,
     ty: TypeDiscriminant,
@@ -135,6 +149,7 @@ pub enum GearImplementation {
     GearSpecial,
     GearCommand,
     GearGenericCommand,
+    Template(GearId),
 }
 
 #[derive(Error, Debug)]
@@ -156,31 +171,4 @@ pub type Result<T> = std::result::Result<T, Error>;
 #[enum_dispatch(GearImplementation, GearSpecial)]
 pub trait Geared {
     fn evaluate(&self, register: &GearRegister, input: Vec<TypedValue>) -> Result<Vec<TypedValue>>;
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum TypedValue {
-    None,
-    U32(u32),
-    U64(u64),
-    I32(i32),
-    I64(i64),
-    F64(f64),
-    String(String),
-}
-
-impl Default for TypedValue {
-    fn default() -> Self {
-        TypedValue::None
-    }
-}
-
-//TODO: use lazy_static to create constant `TypeDiscriminant`s for each type, until `std::mem::discriminant` is const on stable
-
-pub type TypeDiscriminant = std::mem::Discriminant<TypedValue>;
-
-impl TypedValue {
-    pub fn ty(&self) -> TypeDiscriminant {
-        std::mem::discriminant(self)
-    }
 }
