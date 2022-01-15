@@ -6,6 +6,7 @@ pub mod ty;
 mod tests {
     use crate::gear::command::GearCommand;
     use crate::gear::compound::GearCompound;
+    use crate::gear::special::literal::Literal;
     use crate::gear::*;
     use crate::ty::*;
 
@@ -129,34 +130,38 @@ mod tests {
             TypedValue::I32(0)
         );
     }
-    /*
-        //TODO: rewrite Gear system -> remove GearInstance, Gear has optional Gear template + add types
-        fn test_increment() {
-            let register = GearRegister::init();
 
-            let mut compound = GearCompound::new(&register, 1, 1);
-            let add = compound.add_gear(register.internal.math_gears.add.instance());
+    #[test]
+    fn test_increment() {
+        let mut register = GearRegister::init();
 
-            let one = register.special.literal.literal.instance();
-            one.
-            let one = compound.add_gear();
+        let mut compound = GearCompound::new(&mut register, 1, 1);
+        let add = register
+            .instantiator(register.internal.math_gears.add)
+            .instantiate();
 
-            compound.connect(compound.input_id, 0, mul, 0);
-            compound.connect(compound.input_id, 0, mul, 1);
-            compound.connect(mul, 0, compound.output_id, 0);
+        let one = Literal::instantiate(&mut register, TypedValue::U64(1));
 
-            Gear::new(
-                String::from("Squared"),
-                vec![IOInformation::new(
-                    String::from("base"),
-                    TypedValue::U64(Default::default()).ty(),
-                )],
-                vec![IOInformation::new(
-                    String::from("square"),
-                    TypedValue::U64(Default::default()).ty(),
-                )],
-                compound.into(),
-            )
-        }
-    */
+        compound.connect(compound.input_id, 0, add, 0);
+        compound.connect(one, 0, add, 1);
+        compound.connect(add, 0, compound.output_id, 0);
+
+        let gear = register
+            .builder(compound.into())
+            .name(String::from("Increment"))
+            .input(IOInformation::new(
+                String::from("number"),
+                TypedValue::I32(Default::default()).ty(),
+            ))
+            .output(IOInformation::new(
+                String::from("incremented"),
+                TypedValue::I32(Default::default()).ty(),
+            ))
+            .instantiate();
+
+        assert_eq!(
+            register.evaluate(gear, vec![TypedValue::U64(0)]).unwrap()[0],
+            TypedValue::U64(1)
+        );
+    }
 }

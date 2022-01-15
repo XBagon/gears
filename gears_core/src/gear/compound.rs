@@ -82,12 +82,17 @@ impl Geared for GearCompound {
                 if !cache.contains_key(current_gear_id) {
                     let gear = &register.gears[current_gear_id];
 
-                    let connections = &self.connections[&current_gear_id];
-                    let inputs = connections
-                        .iter()
-                        .map(|&(gear_id, out_index)| cache[gear_id][out_index].clone())
-                        .collect();
-
+                    dbg!(&self.connections);
+                    let inputs = if let Some(connections) = &self.connections.get(&current_gear_id)
+                    {
+                        connections
+                            .iter()
+                            .map(|&(gear_id, out_index)| cache[gear_id][out_index].clone())
+                            .collect()
+                    } else {
+                        Vec::new()
+                    };
+                    dbg!(&inputs);
                     cache.insert(current_gear_id, gear.evaluate(register, inputs)?);
                     //? -> early return/abort
                 }

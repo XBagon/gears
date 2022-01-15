@@ -5,14 +5,12 @@ pub mod literal;
 
 pub struct Gears {
     pub io: io::Gears,
-    pub literal: literal::Gears,
 }
 
 impl Gears {
     pub fn init(gears: &mut GearSlotMap) -> Self {
         Self {
             io: io::Gears::init(gears),
-            literal: literal::Gears::init(gears),
         }
     }
 }

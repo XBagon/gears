@@ -18,6 +18,8 @@ impl Gears {
     }
 }
 
+//TODO: define for other num types
+
 template!(Add (summand1: U64, summand2: U64) -> (sum: U64) {{
     sum = summand1 + summand2
 }});

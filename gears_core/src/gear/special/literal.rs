@@ -1,28 +1,14 @@
 use super::*;
 
-pub struct Gears {
-    pub literal: GearId,
-}
-
-impl Gears {
-    pub fn init(gears: &mut GearSlotMap) -> Self {
-        Self {
-            literal: gears.insert(Literal::template()),
-        }
-    }
-}
-
-pub struct Literal(TypedValue);
+pub struct Literal(pub TypedValue);
 impl Literal {
-    pub fn template() -> Gear {
-        Gear {
+    pub fn instantiate(register: &mut GearRegister, value: TypedValue) -> GearId {
+        register.register(Gear {
             name: String::from("Literal"),
             inputs: Vec::new(),
-            outputs: Vec::new(),
-            implementation: GearImplementation::GearSpecial(GearSpecial::Literal(Literal(
-                TypedValue::None,
-            ))),
-        }
+            outputs: vec![IOInformation::new(String::from("value"), value.ty())],
+            implementation: GearImplementation::GearSpecial(GearSpecial::Literal(Literal(value))),
+        })
     }
 }
 
