@@ -1,4 +1,5 @@
 use core::default::Default;
+use std::fmt::{Display, Formatter};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum TypedValue {
@@ -14,6 +15,20 @@ pub enum TypedValue {
 impl Default for TypedValue {
     fn default() -> Self {
         TypedValue::None
+    }
+}
+
+impl Display for TypedValue {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TypedValue::None => write!(f, ""),
+            TypedValue::U32(n) => n.fmt(f),
+            TypedValue::U64(n) => n.fmt(f),
+            TypedValue::I32(n) => n.fmt(f),
+            TypedValue::I64(n) => n.fmt(f),
+            TypedValue::F64(n) => n.fmt(f),
+            TypedValue::String(s) => s.fmt(f),
+        }
     }
 }
 

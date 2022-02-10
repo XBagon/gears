@@ -1,5 +1,6 @@
 pub mod gear;
 pub mod ty;
+pub mod util;
 //FIXME: endless loop when connecting wrong index => add checks + typechecks
 
 #[cfg(test)]

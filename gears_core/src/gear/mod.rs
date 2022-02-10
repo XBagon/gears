@@ -7,8 +7,9 @@ use crate::gear::{
 };
 use crate::ty::*;
 use enum_dispatch::enum_dispatch;
-use slotmap::{new_key_type, SlotMap};
+use slotmap::new_key_type;
 use thiserror::Error;
+use crate::util::LiftSlotMap;
 
 pub mod command;
 pub mod compound;
@@ -23,7 +24,7 @@ impl Geared for GearId {
     }
 }
 
-type GearSlotMap = SlotMap<GearId, Gear>;
+type GearSlotMap = LiftSlotMap<GearId, Gear>;
 
 pub struct GearRegister {
     pub gears: GearSlotMap,
@@ -34,7 +35,7 @@ pub struct GearRegister {
 
 impl GearRegister {
     pub fn init() -> Self {
-        let mut gears = SlotMap::with_key();
+        let mut gears = LiftSlotMap::with_key().into();
         Self {
             internal: internal::Gears::init(&mut gears),
             special: special::Gears::init(&mut gears),
@@ -79,6 +80,24 @@ impl GearRegister {
             outputs: template.outputs.clone(),
             implementation: GearImplementation::Template(template_gear_id),
         }
+    }
+
+    pub fn get_mut_template_implementation(&mut self, gear_id: GearId) -> Option<&mut GearImplementation> {
+        self.get_template_gear_id(gear_id).map(move |id| {
+            &mut self.gears[id].implementation
+        })
+    }
+
+    pub fn get_template_gear_id(&self, gear_id: GearId) -> Option<GearId> {
+        if let GearImplementation::Template(template_gear_id) = self.gears[gear_id].implementation {
+            Some(template_gear_id)
+        } else {
+            None
+        }
+    }
+
+    pub fn lift_gear(&mut self) -> () {
+
     }
 
     pub fn evaluate(&self, gear_id: GearId, input: Vec<TypedValue>) -> Result<Vec<TypedValue>> {
@@ -132,8 +151,8 @@ impl Geared for Gear {
 
 #[derive(Clone)]
 pub struct IOInformation {
-    name: String,
-    ty: TypeDiscriminant,
+    pub name: String,
+    pub ty: TypeDiscriminant,
 }
 
 impl IOInformation {

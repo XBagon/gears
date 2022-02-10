@@ -3,7 +3,7 @@ use slotmap::{Key, SecondaryMap};
 use std::collections::HashMap;
 
 pub struct GearCompound {
-    connections: HashMap<GearId, Vec<(GearId, usize)>>,
+    pub connections: HashMap<GearId, Vec<(GearId, usize)>>,
     pub input_id: GearId,
     pub output_id: GearId,
 }
@@ -48,9 +48,7 @@ impl GearCompound {
         input: Vec<TypedValue>,
     ) -> Result<Vec<TypedValue>> {
         register
-            .gears
-            .get(gear_id)
-            .unwrap()
+            .gears[gear_id]
             .evaluate(register, input)
     }
 }
