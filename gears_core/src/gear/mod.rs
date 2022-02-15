@@ -6,10 +6,10 @@ use crate::gear::{
     special::{io::Input, io::Output, literal::Literal},
 };
 use crate::ty::*;
-use enum_dispatch::enum_dispatch;
-use slotmap::new_key_type;
-use thiserror::Error;
 use crate::util::LiftSlotMap;
+use enum_dispatch::enum_dispatch;
+use slotmap::{new_key_type, SlotMap};
+use thiserror::Error;
 
 pub mod command;
 pub mod compound;
@@ -18,16 +18,20 @@ pub mod special;
 
 new_key_type! { pub struct GearId; }
 
-impl Geared for GearId {
+impl Geared for TemplateGearId {
     fn evaluate(&self, register: &GearRegister, input: Vec<TypedValue>) -> Result<Vec<TypedValue>> {
-        register.evaluate(*self, input)
+        register.template_gears[*self].evaluate(register, input)
     }
 }
 
-type GearSlotMap = LiftSlotMap<GearId, Gear>;
+new_key_type! { pub struct TemplateGearId; }
+
+type GearMap = LiftSlotMap<GearId, Gear>;
+type TemplateGearMap = SlotMap<TemplateGearId, Gear>;
 
 pub struct GearRegister {
-    pub gears: GearSlotMap,
+    pub gears: GearMap,
+    pub template_gears: TemplateGearMap,
     pub internal: internal::Gears,
     pub special: special::Gears,
     pub command: command::Gears,
@@ -35,12 +39,13 @@ pub struct GearRegister {
 
 impl GearRegister {
     pub fn init() -> Self {
-        let mut gears = LiftSlotMap::with_key().into();
+        let mut template_gears = SlotMap::with_key();
         Self {
-            internal: internal::Gears::init(&mut gears),
-            special: special::Gears::init(&mut gears),
-            command: command::Gears::init(&mut gears),
-            gears,
+            internal: internal::Gears::init(&mut template_gears),
+            special: special::Gears::init(&mut template_gears),
+            command: command::Gears::init(&mut template_gears),
+            gears: LiftSlotMap::with_key(),
+            template_gears,
         }
     }
 
@@ -48,13 +53,22 @@ impl GearRegister {
         self.gears.insert(gear)
     }
 
-    pub fn instantiate(&mut self, template_gear_id: GearId) -> GearId {
-        self.register(self.templated_gear(template_gear_id))
+    pub fn register_template(&mut self, gear: Gear) -> TemplateGearId {
+        self.template_gears.insert(gear)
     }
 
-    pub fn instantiator(&mut self, template_gear_id: GearId) -> GearBuilder {
+    pub fn duplicate(&mut self, gear_id: GearId) -> GearId {
+        let clone = self.gears[gear_id].clone();
+        self.gears.insert(clone)
+    }
+
+    pub fn instantiate(&mut self, template_gear_id: TemplateGearId) -> GearId {
+        self.register(self.gear_from_template(template_gear_id))
+    }
+
+    pub fn instantiator(&mut self, template_gear_id: TemplateGearId) -> GearBuilder {
         GearBuilder {
-            gear: self.templated_gear(template_gear_id),
+            gear: self.gear_from_template(template_gear_id),
             register: self,
         }
     }
@@ -72,8 +86,8 @@ impl GearRegister {
         }
     }
 
-    fn templated_gear(&self, template_gear_id: GearId) -> Gear {
-        let template = &self.gears[template_gear_id];
+    fn gear_from_template(&self, template_gear_id: TemplateGearId) -> Gear {
+        let template = &self.template_gears[template_gear_id];
         Gear {
             name: template.name.clone(),
             inputs: template.inputs.clone(),
@@ -82,13 +96,17 @@ impl GearRegister {
         }
     }
 
-    pub fn get_mut_template_implementation(&mut self, gear_id: GearId) -> Option<&mut GearImplementation> {
-        self.get_template_gear_id(gear_id).map(move |id| {
-            &mut self.gears[id].implementation
-        })
+    pub fn get_mut_implementation(&mut self, gear_id: GearId) -> Option<&mut GearImplementation> {
+        let mut gear = &mut self.gears[gear_id];
+        if let GearImplementation::Template(template_gear_id) = gear.implementation {
+            let template_gear = &self.template_gears[template_gear_id];
+            //Instantiate implementation from template
+            gear.implementation = template_gear.implementation.clone();
+        }
+        Some(&mut gear.implementation)
     }
 
-    pub fn get_template_gear_id(&self, gear_id: GearId) -> Option<GearId> {
+    pub fn get_template_gear_id(&self, gear_id: GearId) -> Option<TemplateGearId> {
         if let GearImplementation::Template(template_gear_id) = self.gears[gear_id].implementation {
             Some(template_gear_id)
         } else {
@@ -96,22 +114,24 @@ impl GearRegister {
         }
     }
 
-    pub fn lift_gear(&mut self) -> () {
-
-    }
-
     pub fn evaluate(&self, gear_id: GearId, input: Vec<TypedValue>) -> Result<Vec<TypedValue>> {
         self.gears[gear_id].evaluate(self, input)
     }
 }
 
+#[must_use]
 pub struct GearBuilder<'a> {
     register: &'a mut GearRegister,
     pub gear: Gear,
 }
+
 impl<'a> GearBuilder<'a> {
     pub fn instantiate(self) -> GearId {
         self.register.register(self.gear)
+    }
+
+    pub fn templatize(self) -> TemplateGearId {
+        self.register.register_template(self.gear)
     }
 
     pub fn name(mut self, name: String) -> Self {
@@ -136,6 +156,7 @@ impl Default for GearRegister {
     }
 }
 
+#[derive(Clone)]
 pub struct Gear {
     pub name: String,
     pub inputs: Vec<IOInformation>,
@@ -162,13 +183,14 @@ impl IOInformation {
 }
 
 #[enum_dispatch]
+#[derive(Clone)]
 pub enum GearImplementation {
     GearInternal,
     GearCompound,
     GearSpecial,
     GearCommand,
     GearGenericCommand,
-    Template(GearId),
+    Template(TemplateGearId),
 }
 
 #[derive(Error, Debug)]

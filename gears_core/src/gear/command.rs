@@ -2,17 +2,18 @@ use super::*;
 use std::process::{Command, ExitStatus};
 
 pub struct Gears {
-    pub generic_command: GearId,
+    pub generic_command: TemplateGearId,
 }
 
 impl Gears {
-    pub fn init(gears: &mut GearSlotMap) -> Self {
+    pub fn init(template_gears: &mut TemplateGearMap) -> Self {
         Self {
-            generic_command: gears.insert(GearGenericCommand::template()),
+            generic_command: template_gears.insert(GearGenericCommand::template()),
         }
     }
 }
 
+#[derive(Clone)]
 pub struct GearGenericCommand;
 impl GearGenericCommand {
     pub fn template() -> Gear {
@@ -47,6 +48,7 @@ impl Geared for GearGenericCommand {
     }
 }
 
+#[derive(Clone)]
 pub struct GearCommand {
     program: String,
 }

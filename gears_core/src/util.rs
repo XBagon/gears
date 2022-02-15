@@ -1,6 +1,5 @@
-use std::ops::{Index, IndexMut};
 use slotmap::SlotMap;
-use crate::gear::GearId;
+use std::ops::{Index, IndexMut};
 
 pub struct LiftSlotMap<K: slotmap::Key, V>(SlotMap<K, Option<V>>);
 
@@ -20,7 +19,10 @@ impl<K: slotmap::Key, V> Index<K> for LiftSlotMap<K, V> {
 
 impl<K: slotmap::Key, V> IndexMut<K> for LiftSlotMap<K, V> {
     fn index_mut(&mut self, index: K) -> &mut Self::Output {
-        self.0.index_mut(index).as_mut().expect("Accessed lifted slot!")
+        self.0
+            .index_mut(index)
+            .as_mut()
+            .expect("Accessed lifted slot!")
     }
 }
 
@@ -34,11 +36,17 @@ impl<'a, K: slotmap::Key, V> LiftSlotMap<K, V> {
     }
 
     pub fn iter(&mut self) -> impl Iterator<Item = (K, &V)> {
-        self.0.iter().map(|(k, v)| v.as_ref().map(|v|(k, v))).flatten()
+        self.0
+            .iter()
+            .map(|(k, v)| v.as_ref().map(|v| (k, v)))
+            .flatten()
     }
 
     pub fn iter_mut(&mut self) -> impl Iterator<Item = (K, &mut V)> {
-        self.0.iter_mut().map(|(k, v)| v.as_mut().map(|v|(k, v))).flatten()
+        self.0
+            .iter_mut()
+            .map(|(k, v)| v.as_mut().map(|v| (k, v)))
+            .flatten()
     }
 
     pub fn do_lifted(&mut self, key: K, mut f: impl FnMut(&mut Self, &mut V)) {
@@ -48,9 +56,12 @@ impl<'a, K: slotmap::Key, V> LiftSlotMap<K, V> {
     }
 }
 
+#[cfg(test)]
 #[test]
 fn lift_test() {
-    let mut map = LiftSlotMap::<GearId,_>::with_key();
+    use crate::gear::GearId;
+
+    let mut map = LiftSlotMap::<GearId, _>::with_key();
     let a = map.insert(String::from("abc"));
     let b = map.insert(String::from("def"));
     let c = map.insert(String::from("ghi"));

@@ -2,19 +2,20 @@ use super::*;
 use crate::gear::Error::NonEvaluable;
 
 pub struct Gears {
-    pub input: GearId,
-    pub output: GearId,
+    pub input: TemplateGearId,
+    pub output: TemplateGearId,
 }
 
 impl Gears {
-    pub fn init(gears: &mut GearSlotMap) -> Self {
+    pub fn init(template_gears: &mut TemplateGearMap) -> Self {
         Self {
-            input: gears.insert(Input::template()),
-            output: gears.insert(Output::template()),
+            input: template_gears.insert(Input::template()),
+            output: template_gears.insert(Output::template()),
         }
     }
 }
 
+#[derive(Clone)]
 pub struct Input;
 impl Input {
     pub fn template() -> Gear {
@@ -37,6 +38,7 @@ impl Geared for Input {
     }
 }
 
+#[derive(Clone)]
 pub struct Output;
 impl Output {
     pub fn template() -> Gear {

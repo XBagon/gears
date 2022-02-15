@@ -8,14 +8,15 @@ pub struct Gears {
 }
 
 impl Gears {
-    pub fn init(gears: &mut GearSlotMap) -> Self {
+    pub fn init(template_gears: &mut TemplateGearMap) -> Self {
         Self {
-            io: io::Gears::init(gears),
+            io: io::Gears::init(template_gears),
         }
     }
 }
 
 #[enum_dispatch]
+#[derive(Clone)]
 pub enum GearSpecial {
     Input,
     Output,

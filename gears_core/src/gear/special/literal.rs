@@ -1,5 +1,6 @@
 use super::*;
 
+#[derive(Clone)]
 pub struct Literal(pub TypedValue);
 impl Literal {
     pub fn instantiate(register: &mut GearRegister, value: TypedValue) -> GearId {

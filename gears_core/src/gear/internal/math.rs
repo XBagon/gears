@@ -1,19 +1,19 @@
 use super::*;
 
 pub struct Gears {
-    pub add: GearId,
-    pub sub: GearId,
-    pub mul: GearId,
-    pub div: GearId,
+    pub add: TemplateGearId,
+    pub sub: TemplateGearId,
+    pub mul: TemplateGearId,
+    pub div: TemplateGearId,
 }
 
 impl Gears {
-    pub fn init(gears: &mut GearSlotMap) -> Self {
+    pub fn init(template_gears: &mut TemplateGearMap) -> Self {
         Self {
-            add: gears.insert(Add::template()),
-            sub: gears.insert(Sub::template()),
-            mul: gears.insert(Mul::template()),
-            div: gears.insert(Div::template()),
+            add: template_gears.insert(Add::template()),
+            sub: template_gears.insert(Sub::template()),
+            mul: template_gears.insert(Mul::template()),
+            div: template_gears.insert(Div::template()),
         }
     }
 }

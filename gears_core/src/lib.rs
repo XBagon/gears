@@ -11,7 +11,7 @@ mod tests {
     use crate::gear::*;
     use crate::ty::*;
 
-    fn squared_gear(register: &mut GearRegister) -> GearId {
+    fn squared_gear_template(register: &mut GearRegister) -> TemplateGearId {
         let mut compound = GearCompound::new(register, 1, 1);
         let mul = register.instantiate(register.internal.math_gears.mul);
 
@@ -30,15 +30,15 @@ mod tests {
                 String::from("square"),
                 TypedValue::U64(Default::default()).ty(),
             ))
-            .instantiate()
+            .templatize()
     }
 
     #[test]
     fn test_squared_gear() {
         let mut register = GearRegister::init();
+        let squared = squared_gear_template(&mut register);
 
-        let gear = squared_gear(&mut register);
-
+        let gear = register.instantiate(squared);
         assert_eq!(
             register.evaluate(gear, vec![TypedValue::U64(5)]).unwrap()[0],
             TypedValue::U64(25)
@@ -48,7 +48,7 @@ mod tests {
     #[test]
     fn test_x2_plus_y2() {
         let mut register = GearRegister::init();
-        let squared = squared_gear(&mut register);
+        let squared = squared_gear_template(&mut register);
 
         let mut compound = GearCompound::new(&mut register, 1, 1);
         let squared_x = register.instantiate(squared);

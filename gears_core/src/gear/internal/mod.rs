@@ -7,13 +7,14 @@ pub struct Gears {
 }
 
 impl Gears {
-    pub fn init(gears: &mut GearSlotMap) -> Self {
+    pub fn init(template_gears: &mut TemplateGearMap) -> Self {
         Self {
-            math_gears: math::Gears::init(gears),
+            math_gears: math::Gears::init(template_gears),
         }
     }
 }
 
+#[derive(Clone)]
 pub struct GearInternal {
     pub function:
         fn(Vec<TypedValue>) -> std::result::Result<Vec<TypedValue>, Box<dyn std::error::Error>>,
