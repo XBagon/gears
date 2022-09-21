@@ -11,12 +11,12 @@ pub struct GearCompound {
 
 impl GearCompound {
     pub fn new(register: &mut GearRegister, num_inputs: usize, num_outputs: usize) -> Self {
-        let mut input = register.instantiator(register.special.io.input);
+        let mut input = register.instantiator(register.templates.special.io.input);
         input.gear.outputs =
             vec![IOInformation::new(String::from("in"), TypedValue::None.ty()); num_inputs];
         let input_id = input.instantiate();
 
-        let mut output = register.instantiator(register.special.io.output);
+        let mut output = register.instantiator(register.templates.special.io.output);
         output.gear.inputs =
             vec![IOInformation::new(String::from("out"), TypedValue::None.ty()); num_outputs];
         let output_id = output.instantiate();
