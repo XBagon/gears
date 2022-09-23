@@ -1,5 +1,7 @@
+use std::fmt::{Display, Formatter};
+use egg::{EGraph, Id, Language, LanguageChildren, Pattern};
 use derive_more::*;
-use petgraph::Graph;
+use petgraph::prelude::*;
 use slotmap::{new_key_type, SlotMap};
 
 pub struct Gear {
@@ -92,8 +94,8 @@ impl GearInner {
     pub fn run(&self, inputs: Vec<Value>) -> Result<Vec<Value>> {
         match self {
             GearInner::RuntimeFunction(function) => Ok(function(inputs)?),
-            GearInner::Composite(_) => {
-                unimplemented!()
+            GearInner::Composite(composite) => {
+                composite.run(inputs)
             }
             GearInner::Unimplemented => Err(Error::Unimplemented),
         }
@@ -102,21 +104,78 @@ impl GearInner {
 
 struct Composite {
     gears: SlotMap<GearId, Gear>,
-    graph: Graph<IOPut, ()>,
+    graph: EGraph<GearLanguage, ()>,
+    outputs: Vec<Id>,
 }
 
-enum IOPut {
+impl Composite {
+    pub fn run(&self, inputs: Vec<Value>) -> Result<Vec<Value>> {
+        todo!()
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+enum GearLanguage {
+    Destructure(GearDestructure),
+    Expression(GearExpression),
+    In(usize),
+}
+
+impl Display for GearLanguage {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            GearLanguage::Destructure(destr) => write!(f, "Destructure({})", destr.index),
+            GearLanguage::Expression(expr) => write!(f, "Gear({})", expr.gear.0.as_ffi()),
+            GearLanguage::In(i) => write!(f, "In({})", i),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+struct GearDestructure {
+    index: usize,
+    child: Id,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+struct GearExpression {
+    gear: GearId,
+    children: Vec<Id>,
+}
+
+impl Language for GearLanguage {
+    fn matches(&self, other: &Self) -> bool {
+        self == other
+    }
+
+    fn children(&self) -> &[Id] {
+        match self {
+            GearLanguage::Destructure(destr) => destr.child.as_slice(),
+            GearLanguage::Expression(expr) => &expr.children,
+            GearLanguage::In(_) => &[],
+        }
+    }
+
+    fn children_mut(&mut self) -> &mut [Id] {
+        match self {
+            GearLanguage::Destructure(destr) => destr.child.as_mut_slice(),
+            GearLanguage::Expression(expr) => &mut expr.children,
+            GearLanguage::In(_) => &mut [],
+        }
+    }
+}
+
+enum IOG {
     In(In),
     Out(Out),
+    Gear(GearId),
 }
 
 struct In {
-    gear: GearId,
     index: usize,
 }
 
 struct Out {
-    gear: GearId,
     index: usize,
 }
 
@@ -160,6 +219,59 @@ mod tests {
             .unwrap()
             .into_iter()
             .zip(vec![Value::Float(3.0)])
+            .all(|(actual, expected)| actual == expected));
+    }
+
+    fn construct_double_gear() -> Gear {
+        let mut gears = SlotMap::with_key();
+        let addition_gear = gears.insert(construct_addition_gear());
+        let mut graph = EGraph::<GearLanguage,()>::default();
+
+        let input = graph.add(GearLanguage::In(0));
+        let addition = graph.add(GearLanguage::Expression(GearExpression {
+            gear: addition_gear,
+            children: vec![input, input],
+        }));
+        let output = graph.add(GearLanguage::Destructure(GearDestructure {
+            index: 0,
+            child: addition,
+        }));
+
+        graph.rebuild();
+
+        graph.dot().to_png("C:/tmp/eggdot.png").unwrap();
+
+
+        Gear {
+            header: GearHeader {
+                name: String::from("Double"),
+                inputs: vec![
+                    IOPutHeader {
+                        name: String::from("single"),
+                        ty: Type::Float,
+                    },
+                ],
+                outputs: vec![IOPutHeader {
+                    name: String::from("doubled"),
+                    ty: Type::Float,
+                }],
+            },
+            inner: GearInner::Composite(Composite {
+                gears,
+                graph,
+                outputs: vec![output]
+            }),
+        }
+    }
+
+    #[test]
+    fn check_double_gear() {
+        let gear = construct_double_gear();
+        assert!(gear
+            .run(vec![Value::Float(1.0)])
+            .unwrap()
+            .into_iter()
+            .zip(vec![Value::Float(2.0)])
             .all(|(actual, expected)| actual == expected));
     }
 }
