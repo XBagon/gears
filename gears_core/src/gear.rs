@@ -369,8 +369,6 @@ mod tests {
 
         graph.rebuild();
 
-        graph.dot().to_png("C:/tmp/eggdot.png").unwrap();
-
         Gear {
             header: GearHeader {
                 name: String::from("Double"),
