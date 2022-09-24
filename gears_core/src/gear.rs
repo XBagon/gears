@@ -1,8 +1,7 @@
 use derive_more::*;
 use egg::*;
-use petgraph::prelude::*;
 use slotmap::{new_key_type, SlotMap};
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryInto;
 use std::fmt::{Display, Formatter};
 use std::ops::Index;
 
@@ -73,7 +72,7 @@ pub enum Type {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct StructType(Box<Vec<Type>>);
+pub struct StructType(Vec<Type>);
 
 #[derive(Clone, Debug, PartialEq, From, TryInto)]
 #[try_into(ref)]
@@ -99,13 +98,13 @@ impl Value {
 
     pub fn to_struct(&self) -> Result<&Struct> {
         self.try_into()
-            .map_err(|e| Error::TriedToDestructureNonStruct(self.ty()))
+            .map_err(|_| Error::TriedToDestructureNonStruct(self.ty()))
     }
 
     pub fn into_struct(self) -> Result<Struct> {
         let ty = self.ty();
         self.try_into()
-            .map_err(|e| Error::TriedToDestructureNonStruct(ty))
+            .map_err(|_| Error::TriedToDestructureNonStruct(ty))
     }
 }
 
@@ -116,7 +115,7 @@ impl From<Vec<Value>> for Value {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Struct(Box<Vec<Value>>);
+pub struct Struct(Vec<Value>);
 
 impl Index<usize> for Struct {
     type Output = Value;
@@ -128,15 +127,13 @@ impl Index<usize> for Struct {
 
 impl Struct {
     fn ty(&self) -> Type {
-        Type::Struct(StructType(Box::new(
-            self.0.iter().map(|f| f.ty()).collect(),
-        )))
+        Type::Struct(StructType(self.0.iter().map(|f| f.ty()).collect()))
     }
 }
 
 impl From<Vec<Value>> for Struct {
     fn from(vec: Vec<Value>) -> Self {
-        Self(Box::new(vec))
+        Self(vec)
     }
 }
 
@@ -160,7 +157,7 @@ new_key_type! {pub struct GearId;}
 
 enum GearInner {
     RuntimeFunction(fn(Value) -> Result<Value>),
-    Composite(Composite),
+    Composite(Box<Composite>),
     #[allow(dead_code)]
     Unimplemented,
 }
@@ -186,7 +183,7 @@ impl Composite {
         let mut runtime = Runtime {
             expr: RecExpr::default(),
             input,
-            context: &self,
+            context: self,
         };
 
         let rules = Vec::new();
@@ -213,7 +210,7 @@ struct Runtime<'a> {
 impl<'a> Runtime<'a> {
     pub fn run(&self) -> Result<Value> {
         let top_node = self.expr.as_ref().last().unwrap();
-        self.run_node(&top_node)
+        self.run_node(top_node)
     }
 
     fn run_node(&self, current_node: &GearLanguage) -> Result<Value> {
@@ -227,8 +224,7 @@ impl<'a> Runtime<'a> {
                     .children
                     .iter()
                     .copied()
-                    .map(|c| self.run_node(&self.expr[c]))
-                    .flatten()
+                    .flat_map(|c| self.run_node(&self.expr[c]))
                     .collect::<Vec<_>>()
                     .into();
                 self.context.gears[expr.gear].run(inputs)
@@ -338,14 +334,9 @@ mod tests {
                 }],
             },
             inner: GearInner::RuntimeFunction(|input| {
-                let mut inputs = *input.into_struct().unwrap().0;
-                let (in0, in1) = if let [in0, in1] = inputs[..] {
-                    (in0, in1)
-                } else {
-                    panic!()
-                };
-                let in0: f32 = in0.try_into().unwrap();
-                let in1: f32 = in1.try_into().unwrap();
+                let mut inputs = input.into_struct().unwrap().0;
+                let in1: f32 = inputs.pop().unwrap().try_into().unwrap();
+                let in0: f32 = inputs.pop().unwrap().try_into().unwrap();
                 Ok(vec![Value::Float(in0 + in1)].into())
             }),
         }
@@ -392,11 +383,11 @@ mod tests {
                     ty: Type::Float,
                 }],
             },
-            inner: GearInner::Composite(Composite {
+            inner: GearInner::Composite(Box::new(Composite {
                 gears,
                 graph,
                 outputs: vec![output],
-            }),
+            })),
         }
     }
 
