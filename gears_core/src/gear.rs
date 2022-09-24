@@ -1,9 +1,8 @@
-use derive_more::*;
+use crate::runtime::Runtime;
+use crate::*;
 use egg::*;
 use slotmap::{new_key_type, SlotMap};
-use std::convert::TryInto;
 use std::fmt::{Display, Formatter};
-use std::ops::Index;
 
 pub struct Gear {
     header: GearHeader,
@@ -31,7 +30,7 @@ impl GearHeader {
         let input_strct: &Struct = input.to_struct()?;
         self.inputs
             .iter()
-            .zip(&*input_strct.0)
+            .zip(&input_strct.0)
             .all(|(header, value)| header.ty == value.ty())
             .then_some(())
             .ok_or(Error::InputTypeMismatch)
@@ -41,121 +40,21 @@ impl GearHeader {
         let output_strct: &Struct = output.to_struct()?;
         self.outputs
             .iter()
-            .zip(&*output_strct.0)
+            .zip(&output_strct.0)
             .all(|(header, value)| header.ty == value.ty())
             .then_some(())
             .ok_or(Error::OutputTypeMismatch)
     }
 }
 
-#[derive(Debug)]
-pub enum Error {
-    InputTypeMismatch,
-    OutputTypeMismatch,
-    TriedToDestructureNonStruct(Type),
-    Unimplemented,
-}
-
-pub type Result<T> = std::result::Result<T, Error>;
-
 pub struct IOPutHeader {
     name: String,
     ty: Type,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum Type {
-    Float,
-    Struct(StructType),
-    #[allow(dead_code)]
-    Unimplemented,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct StructType(Vec<Type>);
-
-#[derive(Clone, Debug, PartialEq, From, TryInto)]
-#[try_into(ref)]
-pub enum Value {
-    Float(f32),
-    Struct(Struct),
-    #[allow(dead_code)]
-    Unimplemented,
-}
-
-impl Value {
-    pub fn from_vec(vec: Vec<Value>) -> Self {
-        Self::Struct(vec.into())
-    }
-
-    fn ty(&self) -> Type {
-        match self {
-            Value::Float(_) => Type::Float,
-            Value::Struct(strct) => strct.ty(),
-            _ => unimplemented!(),
-        }
-    }
-
-    pub fn to_struct(&self) -> Result<&Struct> {
-        self.try_into()
-            .map_err(|_| Error::TriedToDestructureNonStruct(self.ty()))
-    }
-
-    pub fn into_struct(self) -> Result<Struct> {
-        let ty = self.ty();
-        self.try_into()
-            .map_err(|_| Error::TriedToDestructureNonStruct(ty))
-    }
-}
-
-impl From<Vec<Value>> for Value {
-    fn from(vec: Vec<Value>) -> Self {
-        Self::from_vec(vec)
-    }
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct Struct(Vec<Value>);
-
-impl Index<usize> for Struct {
-    type Output = Value;
-
-    fn index(&self, index: usize) -> &Self::Output {
-        &self.0[index]
-    }
-}
-
-impl Struct {
-    fn ty(&self) -> Type {
-        Type::Struct(StructType(self.0.iter().map(|f| f.ty()).collect()))
-    }
-}
-
-impl From<Vec<Value>> for Struct {
-    fn from(vec: Vec<Value>) -> Self {
-        Self(vec)
-    }
-}
-
-trait WrapInStruct {
-    fn wrap_in_struct(self) -> Struct;
-}
-
-impl WrapInStruct for Vec<Value> {
-    fn wrap_in_struct(self) -> Struct {
-        self.into()
-    }
-}
-
-impl WrapInStruct for Value {
-    fn wrap_in_struct(self) -> Struct {
-        vec![self].into()
-    }
-}
-
 new_key_type! {pub struct GearId;}
 
-enum GearInner {
+pub enum GearInner {
     RuntimeFunction(fn(Value) -> Result<Value>),
     Composite(Box<Composite>),
     #[allow(dead_code)]
@@ -172,10 +71,10 @@ impl GearInner {
     }
 }
 
-struct Composite {
-    gears: SlotMap<GearId, Gear>,
-    graph: EGraph<GearLanguage, ()>,
-    outputs: Vec<Id>,
+pub struct Composite {
+    pub gears: SlotMap<GearId, Gear>,
+    pub graph: EGraph<GearLanguage, ()>,
+    pub outputs: Vec<Id>,
 }
 
 impl Composite {
@@ -201,41 +100,8 @@ impl Composite {
     }
 }
 
-struct Runtime<'a> {
-    context: &'a Composite,
-    expr: RecExpr<GearLanguage>,
-    input: Value,
-}
-
-impl<'a> Runtime<'a> {
-    pub fn run(&self) -> Result<Value> {
-        let top_node = self.expr.as_ref().last().unwrap();
-        self.run_node(top_node)
-    }
-
-    fn run_node(&self, current_node: &GearLanguage) -> Result<Value> {
-        match current_node {
-            GearLanguage::Destructure(destr) => {
-                let input = self.run_node(&self.expr[destr.child])?;
-                Ok(input.to_struct()?[destr.index].clone())
-            }
-            GearLanguage::Expression(expr) => {
-                let inputs = expr
-                    .children
-                    .iter()
-                    .copied()
-                    .flat_map(|c| self.run_node(&self.expr[c]))
-                    .collect::<Vec<_>>()
-                    .into();
-                self.context.gears[expr.gear].run(inputs)
-            }
-            GearLanguage::In(i) => Ok(self.input.to_struct()?[*i].clone()),
-        }
-    }
-}
-
 #[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
-enum GearLanguage {
+pub enum GearLanguage {
     Destructure(GearDestructure),
     Expression(GearExpression),
     In(usize),
@@ -252,15 +118,15 @@ impl Display for GearLanguage {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
-struct GearDestructure {
-    index: usize,
-    child: Id,
+pub struct GearDestructure {
+    pub index: usize,
+    pub child: Id,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
-struct GearExpression {
-    gear: GearId,
-    children: Vec<Id>,
+pub struct GearExpression {
+    pub gear: GearId,
+    pub children: Vec<Id>,
 }
 
 impl Language for GearLanguage {
@@ -283,20 +149,6 @@ impl Language for GearLanguage {
             GearLanguage::In(_) => &mut [],
         }
     }
-}
-
-enum IOG {
-    In(In),
-    Out(Out),
-    Gear(GearId),
-}
-
-struct In {
-    index: usize,
-}
-
-struct Out {
-    index: usize,
 }
 
 #[cfg(test)]
