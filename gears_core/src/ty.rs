@@ -1,4 +1,6 @@
-#[derive(Clone, Debug, Eq, PartialEq)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
 pub enum Type {
     Float,
     Struct(StructType),
@@ -6,5 +8,5 @@ pub enum Type {
     Unimplemented,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
 pub struct StructType(pub Vec<Type>);

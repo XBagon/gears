@@ -1,9 +1,12 @@
 use crate::runtime::Runtime;
 use crate::*;
 use egg::*;
+use serde::{Deserialize, Serialize};
 use slotmap::{new_key_type, SlotMap};
 use std::fmt::{Display, Formatter};
+use uuid::Uuid;
 
+#[derive(Serialize, Deserialize)]
 pub struct Gear {
     header: GearHeader,
     inner: GearInner,
@@ -19,6 +22,7 @@ impl Gear {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct GearHeader {
     name: String,
     inputs: Vec<IOPutHeader>,
@@ -47,6 +51,7 @@ impl GearHeader {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct IOPutHeader {
     name: String,
     ty: Type,
@@ -54,9 +59,12 @@ pub struct IOPutHeader {
 
 new_key_type! {pub struct GearId;}
 
+#[derive(Serialize, Deserialize)]
 pub enum GearInner {
+    #[serde(skip)]
     RuntimeFunction(fn(Value) -> Result<Value>),
     Composite(Box<Composite>),
+    Reference(GearUuid),
     #[allow(dead_code)]
     Unimplemented,
 }
@@ -67,10 +75,12 @@ impl GearInner {
             GearInner::RuntimeFunction(function) => Ok(function(input)?),
             GearInner::Composite(composite) => composite.run(input),
             GearInner::Unimplemented => Err(Error::Unimplemented),
+            GearInner::Reference(_) => todo!(),
         }
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct Composite {
     pub gears: SlotMap<GearId, Gear>,
     pub graph: EGraph<GearLanguage, ()>,
@@ -100,7 +110,10 @@ impl Composite {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Serialize, Deserialize)]
+pub struct GearUuid(Uuid);
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum GearLanguage {
     Destructure(GearDestructure),
     Expression(GearExpression),
@@ -117,13 +130,13 @@ impl Display for GearLanguage {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct GearDestructure {
     pub index: usize,
     pub child: Id,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct GearExpression {
     pub gear: GearId,
     pub children: Vec<Id>,

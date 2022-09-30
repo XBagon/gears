@@ -7,6 +7,10 @@ edition = "2021"
 
 [dependencies]
 petgraph = "0.6.2"
-slotmap = "1.0"
-egg = "0.9.0"
+slotmap = { git = "https://github.com/orlp/slotmap", features = ["serde"] }
+egg = { version = "0.9.0", features = ["serde-1"] }
 derive_more = "0.99.17"
+postcard = { version = "1.0", features = ["use-std"] }
+serde = "1.0"
+anyhow = "1.0"
+uuid = { version = "1.1", features = ["serde"] }

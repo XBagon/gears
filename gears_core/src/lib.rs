@@ -2,6 +2,7 @@ pub use ty::Type;
 pub use value::{Struct, Value, WrapInStruct};
 
 pub mod gear;
+pub mod gear_file;
 mod runtime;
 pub mod ty;
 pub mod value;
