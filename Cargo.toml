@@ -1,5 +1,7 @@
 [workspace]
 members = [
-    "gears_core"
+    "gears_core",
+    "gearify",
+    "gears_wasm",
+    "gear_impls",
 ]
-

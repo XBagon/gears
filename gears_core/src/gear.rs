@@ -1,18 +1,24 @@
 use crate::runtime::Runtime;
 use crate::*;
 use egg::*;
+pub use gears_wasm::WasmGear;
 use serde::{Deserialize, Serialize};
 use slotmap::{new_key_type, SlotMap};
-use std::fmt::{Display, Formatter};
+use std::fmt::{Display, Formatter, Debug};
 use uuid::Uuid;
 
 #[derive(Serialize, Deserialize)]
+#[derive(Debug)]
 pub struct Gear {
-    header: GearHeader,
+    pub header: GearHeader,
     inner: GearInner,
 }
 
 impl Gear {
+    pub fn new(header: GearHeader, inner: GearInner) -> Gear {
+        Gear { header, inner }
+    }
+
     pub fn run(&self, input: Value) -> Result<Value> {
         //TODO: Are these checks necessary or can this be ensured otherwise?
         self.header.check_input_type(&input)?;
@@ -23,10 +29,11 @@ impl Gear {
 }
 
 #[derive(Serialize, Deserialize)]
+#[derive(Debug)]
 pub struct GearHeader {
-    name: String,
-    inputs: Vec<IOPutHeader>,
-    outputs: Vec<IOPutHeader>,
+    pub name: String,
+    pub inputs: Vec<IOPutHeader>,
+    pub outputs: Vec<IOPutHeader>,
 }
 
 impl GearHeader {
@@ -52,9 +59,14 @@ impl GearHeader {
 }
 
 #[derive(Serialize, Deserialize)]
+#[derive(Debug)]
 pub struct IOPutHeader {
     name: String,
     ty: Type,
+}
+
+impl IOPutHeader {
+    pub fn new(name: String, ty: Type) -> Self { Self { name, ty } }
 }
 
 new_key_type! {pub struct GearId;}
@@ -63,31 +75,53 @@ new_key_type! {pub struct GearId;}
 pub enum GearInner {
     #[serde(skip)]
     RuntimeFunction(fn(Value) -> Result<Value>),
-    Composite(Box<Composite>),
+    Composite(Box<CompositeGear>),
+    Wasm(WasmGear),
     Reference(GearUuid),
     #[allow(dead_code)]
     Unimplemented,
 }
 
 impl GearInner {
+    pub fn into_gear(self, header: GearHeader) -> Gear {
+        Gear {
+            header,
+            inner: self,
+        }
+    }
+
     pub fn run(&self, input: Value) -> Result<Value> {
         match self {
             GearInner::RuntimeFunction(function) => Ok(function(input)?),
             GearInner::Composite(composite) => composite.run(input),
-            GearInner::Unimplemented => Err(Error::Unimplemented),
             GearInner::Reference(_) => todo!(),
+            GearInner::Wasm(_) => todo!(),
+            GearInner::Unimplemented => Err(Error::Unimplemented),
+        }
+    }
+}
+
+impl Debug for GearInner {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::RuntimeFunction(_) => f.debug_tuple("RuntimeFunction").field(&"<internal>").finish(),
+            Self::Composite(arg0) => f.debug_tuple("Composite").field(arg0).finish(),
+            Self::Wasm(wasm) => f.debug_tuple("Wasm").field(&format!("<{} bytes wasm>", wasm.size())).finish(),
+            Self::Reference(uuid) => f.debug_tuple("Reference").field(&uuid.0.hyphenated()).finish(),
+            Self::Unimplemented => write!(f, "Unimplemented"),
         }
     }
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct Composite {
+#[derive(Debug)]
+pub struct CompositeGear {
     pub gears: SlotMap<GearId, Gear>,
     pub graph: EGraph<GearLanguage, ()>,
     pub outputs: Vec<Id>,
 }
 
-impl Composite {
+impl CompositeGear {
     pub fn run(&self, input: Value) -> Result<Value> {
         let mut runtime = Runtime {
             expr: RecExpr::default(),
@@ -246,7 +280,7 @@ mod tests {
                     ty: Type::Float,
                 }],
             },
-            inner: GearInner::Composite(Box::new(Composite {
+            inner: GearInner::Composite(Box::new(CompositeGear {
                 gears,
                 graph,
                 outputs: vec![output],

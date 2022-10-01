@@ -1,11 +1,11 @@
 use crate::{
-    gear::{Composite, GearLanguage},
+    gear::{CompositeGear, GearLanguage},
     *,
 };
 use egg::RecExpr;
 
 pub struct Runtime<'a> {
-    pub context: &'a Composite,
+    pub context: &'a CompositeGear,
     pub expr: RecExpr<GearLanguage>,
     pub input: Value,
 }

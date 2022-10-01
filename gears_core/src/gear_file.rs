@@ -6,17 +6,25 @@ use serde::{Deserialize, Serialize};
 use crate::gear::Gear;
 
 #[derive(Serialize, Deserialize)]
+#[derive(Debug)]
 pub struct GearFile {
     meta_data: MetaData,
     gear: Gear,
 }
 
+impl GearFile {
+    pub fn new(meta_data: MetaData, gear: Gear) -> Self {
+        Self { meta_data, gear }
+    }
+}
+
 #[derive(Serialize, Deserialize)]
+#[derive(Debug)]
 pub struct MetaData {
-    name: String,
-    description: String,
-    author: String,
-    tags: HashMap<String, String>,
+    pub name: String,
+    pub description: String,
+    pub author: String,
+    pub tags: HashMap<String, String>,
 }
 
 impl GearFile {
