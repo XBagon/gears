@@ -19,7 +19,7 @@ jobs:
     - name: Build
       run: cargo build --verbose
     - name: Build gear_impls
-      run: cargo build --examples --release
+      run: cargo build -p gear_impls --examples --target wasm32-wasi --release
     - name: Run tests
       run: cargo test --workspace --exclude gear_impls --verbose
     - name: Archive gears
