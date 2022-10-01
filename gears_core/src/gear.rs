@@ -4,11 +4,10 @@ use egg::*;
 pub use gears_wasm::WasmGear;
 use serde::{Deserialize, Serialize};
 use slotmap::{new_key_type, SlotMap};
-use std::fmt::{Display, Formatter, Debug};
+use std::fmt::{Debug, Display, Formatter};
 use uuid::Uuid;
 
-#[derive(Serialize, Deserialize)]
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Gear {
     pub header: GearHeader,
     inner: GearInner,
@@ -28,8 +27,7 @@ impl Gear {
     }
 }
 
-#[derive(Serialize, Deserialize)]
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct GearHeader {
     pub name: String,
     pub inputs: Vec<IOPutHeader>,
@@ -58,15 +56,16 @@ impl GearHeader {
     }
 }
 
-#[derive(Serialize, Deserialize)]
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct IOPutHeader {
     name: String,
     ty: Type,
 }
 
 impl IOPutHeader {
-    pub fn new(name: String, ty: Type) -> Self { Self { name, ty } }
+    pub fn new(name: String, ty: Type) -> Self {
+        Self { name, ty }
+    }
 }
 
 new_key_type! {pub struct GearId;}
@@ -104,17 +103,25 @@ impl GearInner {
 impl Debug for GearInner {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::RuntimeFunction(_) => f.debug_tuple("RuntimeFunction").field(&"<internal>").finish(),
+            Self::RuntimeFunction(_) => f
+                .debug_tuple("RuntimeFunction")
+                .field(&"<internal>")
+                .finish(),
             Self::Composite(arg0) => f.debug_tuple("Composite").field(arg0).finish(),
-            Self::Wasm(wasm) => f.debug_tuple("Wasm").field(&format!("<{} bytes wasm>", wasm.size())).finish(),
-            Self::Reference(uuid) => f.debug_tuple("Reference").field(&uuid.0.hyphenated()).finish(),
+            Self::Wasm(wasm) => f
+                .debug_tuple("Wasm")
+                .field(&format!("<{} bytes wasm>", wasm.size()))
+                .finish(),
+            Self::Reference(uuid) => f
+                .debug_tuple("Reference")
+                .field(&uuid.0.hyphenated())
+                .finish(),
             Self::Unimplemented => write!(f, "Unimplemented"),
         }
     }
 }
 
-#[derive(Serialize, Deserialize)]
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct CompositeGear {
     pub gears: SlotMap<GearId, Gear>,
     pub graph: EGraph<GearLanguage, ()>,

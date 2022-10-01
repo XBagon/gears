@@ -1,12 +1,16 @@
 use anyhow::{anyhow, Result};
 use gears_core::{
-    gear::{Gear, GearHeader, GearInner, WasmGear, IOPutHeader},
+    gear::{Gear, GearHeader, GearInner, IOPutHeader, WasmGear},
     gear_file::{GearFile, MetaData},
 };
-use wasmtime::{Module, Engine};
-use std::{path::Path, fs};
+use std::{fs, path::Path};
+use wasmtime::{Engine, Module};
 
-pub fn save_gear_from_wasm_file<P: AsRef<Path>>(gear_path: P, meta_data: MetaData, wasm_path: P) -> Result<()> {
+pub fn save_gear_from_wasm_file<P: AsRef<Path>>(
+    gear_path: P,
+    meta_data: MetaData,
+    wasm_path: P,
+) -> Result<()> {
     let gear = from_wasm_file(wasm_path)?;
     let gear_file = GearFile::new(meta_data, gear);
 
@@ -27,7 +31,8 @@ fn from_wasm_file<P: AsRef<Path>>(path: P) -> Result<Gear> {
     for module_export in module_exports {
         match module_export.ty() {
             wasmtime::ExternType::Func(func_ty) => {
-                if module_export.name() == "_start" { //skip wasm start function 
+                if module_export.name() == "_start" {
+                    //skip wasm start function
                     continue;
                 }
                 if first_function.is_none() {
@@ -35,8 +40,8 @@ fn from_wasm_file<P: AsRef<Path>>(path: P) -> Result<Gear> {
                 } else {
                     todo!("Warning: Multiple functions exported!");
                 }
-            },
-            _ => {},
+            }
+            _ => {}
         }
     }
     let (name, ty) = if let Some(first_function) = first_function {
@@ -44,31 +49,37 @@ fn from_wasm_file<P: AsRef<Path>>(path: P) -> Result<Gear> {
     } else {
         return Err(anyhow!("Wasm file exports no function!"));
     };
-    let inputs = ty.params().map(|param| {
-        let ty = match param {
-            wasmtime::ValType::I32 => todo!(),
-            wasmtime::ValType::I64 => todo!(),
-            wasmtime::ValType::F32 => gears_core::Type::Float,
-            wasmtime::ValType::F64 => todo!(),
-            wasmtime::ValType::V128 => todo!(),
-            wasmtime::ValType::FuncRef => todo!(),
-            wasmtime::ValType::ExternRef => todo!(),
-        };
-        IOPutHeader::new(String::new(), ty)
-    }).collect();
+    let inputs = ty
+        .params()
+        .map(|param| {
+            let ty = match param {
+                wasmtime::ValType::I32 => todo!(),
+                wasmtime::ValType::I64 => todo!(),
+                wasmtime::ValType::F32 => gears_core::Type::Float,
+                wasmtime::ValType::F64 => todo!(),
+                wasmtime::ValType::V128 => todo!(),
+                wasmtime::ValType::FuncRef => todo!(),
+                wasmtime::ValType::ExternRef => todo!(),
+            };
+            IOPutHeader::new(String::new(), ty)
+        })
+        .collect();
 
-    let outputs = ty.results().map(|param| {
-        let ty = match param {
-            wasmtime::ValType::I32 => todo!(),
-            wasmtime::ValType::I64 => todo!(),
-            wasmtime::ValType::F32 => gears_core::Type::Float,
-            wasmtime::ValType::F64 => todo!(),
-            wasmtime::ValType::V128 => todo!(),
-            wasmtime::ValType::FuncRef => todo!(),
-            wasmtime::ValType::ExternRef => todo!(),
-        };
-        IOPutHeader::new(String::new(), ty)
-    }).collect();
+    let outputs = ty
+        .results()
+        .map(|param| {
+            let ty = match param {
+                wasmtime::ValType::I32 => todo!(),
+                wasmtime::ValType::I64 => todo!(),
+                wasmtime::ValType::F32 => gears_core::Type::Float,
+                wasmtime::ValType::F64 => todo!(),
+                wasmtime::ValType::V128 => todo!(),
+                wasmtime::ValType::FuncRef => todo!(),
+                wasmtime::ValType::ExternRef => todo!(),
+            };
+            IOPutHeader::new(String::new(), ty)
+        })
+        .collect();
     let header = GearHeader {
         name: name.to_owned(),
         inputs,
